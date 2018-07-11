@@ -23,7 +23,7 @@ val_size = 0.2
 data=pd.read_csv(data_location+"train.csv")
 
 
-data.top(2)
+data.head(2)
 
 
 features=[k for k in data]
