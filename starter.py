@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jul 11 19:41:15 2018
-@author: Moseli Motsehli
+@author: Moseli Motsoehli
 Title: Satander starter
 """
 ###########################libraries################################
