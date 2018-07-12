@@ -150,6 +150,6 @@ Submission1[['ID','target']].to_csv(data_location+'submission8.csv', header=True
 Submission1.head(5)
 
 #compare minmax of the two
-print("XGB: %s_%s"%(min(Submission1['target']),max(Submission1['target']))
+print("XGB: %s_%s"%(min(Submission1['target']),max(Submission1['target'])))
 print("ExtraTrees: %s_%s"(min(np.expm1(training_dict["extratrees"].predict(testDataPCAScaled))),
                           max(np.expm1(training_dict["extratrees"].predict(testDataPCAScaled)))))
