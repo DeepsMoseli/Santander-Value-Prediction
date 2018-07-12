@@ -95,9 +95,9 @@ def testPCA(components):
 
     param = {}
     param['objective'] = 'reg:linear'
-    param['eta'] = 0.002
-    param['max_depth'] = 10
-    param['alpha'] = 0.002
+    param['eta'] = 0.001
+    param['max_depth'] = 6
+    param['alpha'] = 0.001
     param['subsample'] = 0.6
     param['silent'] = 0
     param['nthread'] = 4
