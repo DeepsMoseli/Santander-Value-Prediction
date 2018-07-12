@@ -76,8 +76,9 @@ def testPCA(components):
     #MinMax Normalizer
     scaler = MinMaxScaler()
     scaler.fit(data2)
+    data2 = scaler.transform(data2)
     
-    #data2 = scaler.transform(data2)
+    y["target"]= np.log1p(y["target"])
     
     #train test split
     x_train,x_test,y_train,y_test = tts(data2,y["target"],test_size=0.30)
@@ -94,7 +95,7 @@ def testPCA(components):
 
     param = {}
     param['objective'] = 'reg:linear'
-    param['eta'] = 0.001
+    param['eta'] = 0.002
     param['max_depth'] = 10
     param['alpha'] = 0.002
     param['subsample'] = 0.6
@@ -119,13 +120,12 @@ def testPCA(components):
     
     y_pred_2best = (0.6*y_pred_ada) + (0.4*y_pred_xgb)
 
-    print("PCA: %s --- Ranfor RMSE is : %s"%(components,np.sqrt(mse(np.log(y_test),np.log(y_pred)))))
-    print("PCA: %s --- ExtraTrees RMSE is : %s"%(components,np.sqrt(mse(np.log(y_test),np.log(y_pred_ada)))))
-    print("PCA: %s --- Bagging RMSE is : %s"%(components,np.sqrt(mse(np.log(y_test),np.log(y_pred_grad)))))
+    print("PCA: %s --- Ranfor RMSE is : %s"%(components,np.sqrt(mse(y_test,y_pred))))
+    print("PCA: %s --- ExtraTrees RMSE is : %s"%(components,np.sqrt(mse(y_test,y_pred_ada))))
+    print("PCA: %s --- Bagging RMSE is : %s"%(components,np.sqrt(mse(y_test,y_pred_grad))))
+    print("PCA: %s --- XGBoost RMSE is : %s"%(components,np.sqrt(mse(y_test,y_pred_xgb))))
     
-    print("PCA: %s --- XGBoost RMSE is : %s"%(components,np.sqrt(mse(np.log(y_test),np.log(y_pred_xgb)))))
-    
-    print("PCA: %s --- XGBoost+Trees RMSE is : %s"%(components,np.sqrt(mse(np.log(y_test),np.log(y_pred_2best)))))
+    print("PCA: %s --- XGBoost+ExtraTrees RMSE is : %s"%(components,np.sqrt(mse(y_test,y_pred_2best))))
     
     
     return {"pca":pca_trans,"scaler":scaler,"ranfor":ranfor,'extratrees':extratrees,'bagging':bagging,
@@ -140,16 +140,16 @@ del forDelete
 ###################################################################
 ##############################Submission############################
 
-        
 testDataPCAScaled = training_dict["pca"].transform(testData)
 testDataPCAScaled = training_dict["scaler"].transform(testDataPCAScaled)
 
 
-Submission1['target']=pd.DataFrame(training_dict["xgboost"].predict(xgb.DMatrix(testDataPCAScaled)))
-Submission1[['ID','target']].to_csv(data_location+'submission7.csv', header=True, index=False)
+Submission1['target']=pd.DataFrame(np.expm1(training_dict["xgboost"].predict(xgb.DMatrix(testDataPCAScaled))))
+Submission1[['ID','target']].to_csv(data_location+'submission8.csv', header=True, index=False)
 
 Submission1.head(5)
 
-
-max(Submission1['target'])
-max(training_dict["extratrees"].predict(testDataPCAScaled))
+#compare minmax of the two
+print("XGB: %s_%s"%(min(Submission1['target']),max(Submission1['target']))
+print("ExtraTrees: %s_%s"(min(np.expm1(training_dict["extratrees"].predict(testDataPCAScaled))),
+                          max(np.expm1(training_dict["extratrees"].predict(testDataPCAScaled)))))
