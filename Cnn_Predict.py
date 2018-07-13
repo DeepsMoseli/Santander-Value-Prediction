@@ -23,6 +23,7 @@ from keras import initializers
 from keras.optimizers import RMSprop
 from keras.models import Sequential,Model
 from keras.layers import Dense,LSTM,Dropout,Input,Activation,Add,Concatenate
+from keras.layers import Conv2D, MaxPool2D, Flatten
 from keras.layers.advanced_activations import LeakyReLU
 from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
@@ -41,29 +42,50 @@ del data["ID"],data['target']
 
 
 
-
 def fullyConnected(data):
     learning_rate = 0.001
     clip_norm = 2.0
     
-    Dimension=2500
+    Dimension=1600
+    sqrtDim = np.sqrt(Dimension)
+    
     pca_trans=tsvd(n_components=Dimension,random_state=42,n_iter=20)
     data2 = pca_trans.fit_transform(data)
     
+    print("PCA Done")
+    im_shape = (sqrtDim,sqrtDim, 1)
+    kernelSize = (4, 4)
+    
     x_train,x_test,y_train,y_test = tts(data2,y["target"],test_size=0.20)
-
+    
+    x_train=np.array(x_train)
+    x_test=np.array(x_test)
+    
+    x_train_img =np.reshape(x_train,(len(x_train),sqrtDim,sqrtDim))
+    x_test_img =np.reshape(x_test,(len(x_test),sqrtDim,sqrtDim))
+    
+    print("Images succesfully created")
+    
+    #Remember to reshape the input
     model = Sequential()
-    model.add(Dense(Dimension,input_dim = Dimension, kernel_initializer='normal', activation='relu'))
-    model.add(Dense(int(Dimension*0.6), activation='tanh'))
-    model.add(Dense(int(Dimension*0.4), activation='relu'))
+    model.add(Conv2D(filters=32, kernel_size=kernelSize, 
+                     input_shape=im_shape, activation='relu'))
+    model.add(Conv2D(filters=64, kernel_size=kernelSize, activation="relu"))
+    model.add(MaxPool2D(pool_size=(2, 2), strides=(2, 2), padding="same"))
     model.add(Dropout(0.4))
-    model.add(Dense(int(Dimension*0.4), activation='tanh'))
-    model.add(Dense(int(Dimension*0.1), activation='relu'))
-    model.add(Dense(1, activation='relu'))
-    rmsprop = RMSprop(lr=learning_rate,clipnorm=clip_norm)
+    model.add(Flatten())
+    
+    #model.add(Dense(Dimension,input_dim = Dimension, kernel_initializer='normal', activation='relu'))
+    model.add(Dense(256,kernel_initializer='normal', activation='tanh'))
+    model.add(Dense(128,kernel_initializer='normal', activation='relu'))
+    model.add(Dropout(0.4))
+    model.add(Dense(128,kernel_initializer='normal',activation='tanh'))
+    model.add(Dense(64,kernel_initializer='normal',activation='relu'))
+    model.add(Dense(1,kernel_initializer='normal',activation='relu'))
+    #rmsprop = RMSprop(lr=learning_rate,clipnorm=clip_norm)
     adam = Adam(lr=learning_rate,clipnorm=clip_norm)
     model.compile(loss='mse', optimizer=adam, metrics=['mse'])
-    model.fit(np.array(x_train), np.array(y_train), validation_data=(np.array(x_test), np.array(y_test)), epochs=100, batch_size=100, verbose=2)
+    model.fit(x_train_img, np.array(y_train), validation_data=(x_test_img, np.array(y_test)), epochs=100, batch_size=100, verbose=2)
     return model
 
 
