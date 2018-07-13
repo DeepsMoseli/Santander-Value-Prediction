@@ -11,6 +11,7 @@ import numpy as np
 
 from sklearn.model_selection import train_test_split as tts
 from sklearn.decomposition import PCA
+from sklearn.decomposition import KernelPCA as kpca
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.ensemble import RandomForestRegressor as RFR
 from sklearn.ensemble import ExtraTreesRegressor as ETR
@@ -67,21 +68,22 @@ for k in zero_var:
 """----------------PCA Transformation-----------"""
 def testPCA(components):
     
-    pca_trans=PCA(n_components=components,random_state=1)
+    #pca_trans=PCA(n_components=components,random_state=1)
+    pca_trans=kpca(n_components=components,random_state=7,kernel ="sigmoid")
 
-    pca_trans.fit_transform(data)
+    forDelete2=pca_trans.fit_transform(forDelete)
     
     data2 = pca_trans.transform(data)
     
     #MinMax Normalizer
     scaler = MinMaxScaler()
-    scaler.fit(data2)
+    scaler.fit(forDelete2)
     data2 = scaler.transform(data2)
     
     y["target"]= np.log1p(y["target"])
     
     #train test split
-    x_train,x_test,y_train,y_test = tts(data2,y["target"],test_size=0.30)
+    x_train,x_test,y_train,y_test = tts(data2,y["target"],test_size=0.20)
     
     #######################----------Algos--------------------#######################
     ranfor = RFR(n_estimators=200,verbose=0,n_jobs =-1,random_state=7)
@@ -98,7 +100,7 @@ def testPCA(components):
     param['eta'] = 0.001
     param['max_depth'] = 6
     param['alpha'] = 0.001
-    param['subsample'] = 0.6
+    param['subsample'] = 0.55
     param['silent'] = 0
     param['nthread'] = 4
     param['eval_metric']='rmse'
@@ -109,7 +111,7 @@ def testPCA(components):
     ranfor.fit(x_train,y_train)
     extratrees.fit(x_train,y_train)
     bagging.fit(x_train,y_train)
-    bst = xgb.train(param, xgb_train,5000,watchlist,early_stopping_rounds=100,
+    bst = xgb.train(param, xgb_train,9000,watchlist,early_stopping_rounds=100,
                     verbose_eval=100,maximize=False);
     
     
@@ -145,8 +147,9 @@ testDataPCAScaled = training_dict["scaler"].transform(testDataPCAScaled)
 
 
 Submission1['target']=pd.DataFrame(np.expm1(training_dict["xgboost"].predict(xgb.DMatrix(testDataPCAScaled))))
-Submission1[['ID','target']].to_csv(data_location+'submission8.csv', header=True, index=False)
+Submission1[['ID','target']].to_csv(data_location+'submission9.csv', header=True, index=False)
 
+Submission1['target']=pd.DataFrame(np.expm1(training_dict["extratrees"].predict(testDataPCAScaled)))
 Submission1.head(5)
 
 #compare minmax of the two
