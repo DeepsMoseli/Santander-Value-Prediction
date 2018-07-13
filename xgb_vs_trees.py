@@ -11,7 +11,7 @@ import numpy as np
 
 from sklearn.model_selection import train_test_split as tts
 from sklearn.decomposition import PCA
-from sklearn.decomposition import KernelPCA as kpca
+from sklearn.decomposition import TruncatedSVD as tsvd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.ensemble import RandomForestRegressor as RFR
 from sklearn.ensemble import ExtraTreesRegressor as ETR
@@ -69,7 +69,7 @@ for k in zero_var:
 def testPCA(components):
     
     #pca_trans=PCA(n_components=components,random_state=1)
-    pca_trans=kpca(n_components=components,random_state=7,kernel ="sigmoid")
+    pca_trans=tsvd(n_components=components,random_state=7,n_iter=10)
 
     forDelete2=pca_trans.fit_transform(forDelete)
     
@@ -86,9 +86,9 @@ def testPCA(components):
     x_train,x_test,y_train,y_test = tts(data2,y["target"],test_size=0.20)
     
     #######################----------Algos--------------------#######################
-    ranfor = RFR(n_estimators=200,verbose=0,n_jobs =-1,random_state=7)
-    extratrees = ETR(n_estimators=200,random_state=7)
-    bagging = BR(ETR(n_estimators=5,random_state=1),n_estimators=100,random_state=7)
+    ranfor = RFR(n_estimators=500,verbose=0,n_jobs =-1,random_state=7)
+    extratrees = ETR(n_estimators=500,random_state=7)
+    bagging = BR(ETR(n_estimators=10,random_state=1),n_estimators=100,random_state=7)
     
     """---XGBOOST---"""
     xgb_train=xgb.DMatrix(x_train,label=y_train)
@@ -97,10 +97,10 @@ def testPCA(components):
 
     param = {}
     param['objective'] = 'reg:linear'
-    param['eta'] = 0.001
-    param['max_depth'] = 6
+    param['eta'] = 0.0005
+    param['max_depth'] = 32
     param['alpha'] = 0.001
-    param['subsample'] = 0.55
+    param['subsample'] = 0.6
     param['silent'] = 0
     param['nthread'] = 4
     param['eval_metric']='rmse'
@@ -110,23 +110,38 @@ def testPCA(components):
     """-fit-"""
     ranfor.fit(x_train,y_train)
     extratrees.fit(x_train,y_train)
-    bagging.fit(x_train,y_train)
+    
     bst = xgb.train(param, xgb_train,9000,watchlist,early_stopping_rounds=100,
                     verbose_eval=100,maximize=False);
     
     
     y_pred = ranfor.predict(x_test)
     y_pred_ada = extratrees.predict(x_test)
-    y_pred_grad = bagging.predict(x_test)
     y_pred_xgb = bst.predict(xgb_test_pred,ntree_limit=bst.best_ntree_limit)
+    
+    #blending
+    blending_X=pd.DataFrame()
+    blending_X['xgb']= bst.predict(xgb.DMatrix(x_train),ntree_limit=bst.best_ntree_limit)
+    blending_X['ExtraTrees']=extratrees.predict(x_train)
+    blending_X['ranfor'] =  ranfor.predict(x_train)
+    
+    bagging.fit(blending_X,y_train)
+    
+    blending_test=pd.DataFrame()
+    blending_test['xgb']= y_pred_xgb
+    blending_test['ExtraTrees']=y_pred_ada
+    blending_test['ranfor'] =  y_pred
+    
+    y_pred_grad = bagging.predict(blending_test)
+    ###############################################
     
     y_pred_2best = (0.6*y_pred_ada) + (0.4*y_pred_xgb)
 
     print("PCA: %s --- Ranfor RMSE is : %s"%(components,np.sqrt(mse(y_test,y_pred))))
     print("PCA: %s --- ExtraTrees RMSE is : %s"%(components,np.sqrt(mse(y_test,y_pred_ada))))
-    print("PCA: %s --- Bagging RMSE is : %s"%(components,np.sqrt(mse(y_test,y_pred_grad))))
     print("PCA: %s --- XGBoost RMSE is : %s"%(components,np.sqrt(mse(y_test,y_pred_xgb))))
     
+    print("PCA: %s --- blended bagging RMSE is : %s"%(components,np.sqrt(mse(y_test,y_pred_grad))))
     print("PCA: %s --- XGBoost+ExtraTrees RMSE is : %s"%(components,np.sqrt(mse(y_test,y_pred_2best))))
     
     
@@ -136,7 +151,7 @@ def testPCA(components):
 ###################################################################
 #########################Training Pipeline#########################
     
-training_dict = testPCA(100)
+training_dict = testPCA(500)
 del forDelete
 
 ###################################################################
@@ -147,7 +162,7 @@ testDataPCAScaled = training_dict["scaler"].transform(testDataPCAScaled)
 
 
 Submission1['target']=pd.DataFrame(np.expm1(training_dict["xgboost"].predict(xgb.DMatrix(testDataPCAScaled))))
-Submission1[['ID','target']].to_csv(data_location+'submission9.csv', header=True, index=False)
+Submission1[['ID','target']].to_csv(data_location+'submission10.csv', header=True, index=False)
 
 Submission1['target']=pd.DataFrame(np.expm1(training_dict["extratrees"].predict(testDataPCAScaled)))
 Submission1.head(5)
