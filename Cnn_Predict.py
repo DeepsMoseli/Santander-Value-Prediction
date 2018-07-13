@@ -23,7 +23,7 @@ from keras import initializers
 from keras.optimizers import RMSprop
 from keras.models import Sequential,Model
 from keras.layers import Dense,LSTM,Dropout,Input,Activation,Add,Concatenate
-from keras.layers import Conv2D, MaxPool2D, Flatten
+from keras.layers import Conv1D, MaxPool1D, Flatten
 from keras.layers.advanced_activations import LeakyReLU
 from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
@@ -47,7 +47,7 @@ def fullyConnected(data):
     clip_norm = 2.0
     
     Dimension=1600
-    sqrtDim = np.sqrt(Dimension)
+    sqrtDim = int(np.sqrt(Dimension))
     
     pca_trans=tsvd(n_components=Dimension,random_state=42,n_iter=20)
     data2 = pca_trans.fit_transform(data)
@@ -68,10 +68,10 @@ def fullyConnected(data):
     
     #Remember to reshape the input
     model = Sequential()
-    model.add(Conv2D(filters=32, kernel_size=kernelSize, 
+    model.add(Conv1D(filters=32, kernel_size=kernelSize, 
                      input_shape=im_shape, activation='relu'))
-    model.add(Conv2D(filters=64, kernel_size=kernelSize, activation="relu"))
-    model.add(MaxPool2D(pool_size=(2, 2), strides=(2, 2), padding="same"))
+    model.add(Conv1D(filters=64, kernel_size=kernelSize, activation="relu"))
+    model.add(MaxPool1D(pool_size=(2, 2), strides=(2, 2), padding="same"))
     model.add(Dropout(0.4))
     model.add(Flatten())
     
@@ -90,11 +90,6 @@ def fullyConnected(data):
 
 
 model= fullyConnected(data)
-
-
-
-
-
 
 
 
