@@ -54,7 +54,7 @@ def fullyConnected(data):
     
     print("PCA Done")
     im_shape = (sqrtDim,sqrtDim, 1)
-    kernelSize = (4, 4)
+    kernelSize = (4)
     
     x_train,x_test,y_train,y_test = tts(data2,y["target"],test_size=0.20)
     
@@ -71,7 +71,7 @@ def fullyConnected(data):
     model.add(Conv1D(filters=32, kernel_size=kernelSize, 
                      input_shape=im_shape, activation='relu'))
     model.add(Conv1D(filters=64, kernel_size=kernelSize, activation="relu"))
-    model.add(MaxPool1D(pool_size=(2, 2), strides=(2, 2), padding="same"))
+    model.add(MaxPool1D(pool_size=(2), strides=(2), padding="same"))
     model.add(Dropout(0.4))
     model.add(Flatten())
     
