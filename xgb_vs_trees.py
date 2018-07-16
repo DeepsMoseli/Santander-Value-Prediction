@@ -24,6 +24,9 @@ from sklearn.metrics import mean_squared_error as mse
 import xgboost as xgb
 
 
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',\
+    level=logging.INFO)
+
 ####################################################################
 ###########################configs##################################
 data_location = "E:/ML Personal/setander/"
